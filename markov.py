@@ -1,4 +1,6 @@
 import random
+import enchant
+import operator
 
 class Choice(object):
 
@@ -29,8 +31,23 @@ class Markov(object):
 		caps = []
 		for word in words:
 			if word[0].isupper():
+                                word = word.decode('string_escape')
+                                word = word.replace(",", "")
+                                word = word.replace(".", "")
+                                word = word.replace("!", "")
 				caps.append(word)
-		print caps
+                d = enchant.Dict("en_US")
+                for cap in caps:
+                    temp = cap.lower()
+                    if d.check(temp) or d.check(cap):
+                        caps.remove(cap)
+                word_counts = {}
+                for cap in caps:
+                    if cap in word_counts:
+                        word_counts[cap] += 1
+                    else:
+                        word_counts[cap] = 1
+                return max(word_counts.iteritems(), key=operator.itemgetter(1))[0]
 
 	def triples(self, words):
 		if len(words) < 3:
