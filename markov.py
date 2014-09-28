@@ -6,6 +6,13 @@ class Choice(object):
 		self.word = word
 		self.mashNum = mashNum
 
+class Node(object):
+
+	def __init__(self, key, c, children):
+		self.choice = c
+		self.children = children
+		self.key = key
+
 class Markov(object):
 	
 	def __init__(self, open_file_1, open_file_2):
@@ -18,7 +25,7 @@ class Markov(object):
 		self.database(words2, 1)
 		self.word_size = len(words1) + len(words2)
 		self.words = words1 + words2
-		
+
 	def file_to_words(self, open_file):
 		open_file.seek(0)
 		data = open_file.read()
@@ -37,6 +44,8 @@ class Markov(object):
 			return
 		for i in range(len(words) - 2):
 			yield (words[i], words[i+1], words[i+2])
+		yield words[-2], words[-1], words[0]
+		yield words[-1], words[0], words[1]
 			
 	def database(self, words, mashNum):
 		for w1, w2, w3 in self.triples(words):
