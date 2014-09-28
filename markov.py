@@ -1,7 +1,10 @@
 import random
 import enchant
 import operator
+import nltk
 
+d = enchant.Dict("en_US")
+word_counts = {}
 class Choice(object):
 
 	def __init__(self, word, mashNum):
@@ -14,20 +17,72 @@ class Markov(object):
 		self.cache = {}
 		words1 = self.file_to_words(open_file_1)
 		words2 = self.file_to_words(open_file_2)
-		main_char1 = self.get_main_char(words1)
-		main_char2 = self.get_main_char(words2)
+                main_name1 = self.get_main_name(words1)
+                main_name2 = self.get_main_name(words2)
+                print main_name1
+                print main_name2
+                words2 = self.replace_words(main_name1, main_name2, words2)
 		self.database(words1, 0)
 		self.database(words2, 1)
 		self.word_size = len(words1) + len(words2)
 		self.words = words1 + words2
 		
+        def replace_words(self, main_name1, main_name2, words):
+            for i in range(len(words)):
+                if words[i] == main_name2:
+                    print words[i]
+                    words[i] = main_name1
+                    print words[i]
+            return words
+
 	def file_to_words(self, open_file):
 		open_file.seek(0)
 		data = open_file.read()
 		words = data.split()
 		return words
 		
-	def get_main_char(self, words):
+        def name_features(self, word):
+            count = 0
+            if word in word_counts:
+                count = word_counts[word]
+            return {'upper_case': word[0].isupper(), 'in_dict': not d.check(word.lower()), 'num_times': count}
+
+        def get_main_name(self, words):
+            self.get_word_counts(words)
+            results = self.get_training_data(words)
+            random.shuffle(results)
+            featuresets = [(self.name_features(n), name) for (n, name) in results]
+            length = len(featuresets)
+            train_set, test_set = featuresets[length/2:], featuresets[:length/2]
+            classifier = nltk.NaiveBayesClassifier.train(train_set)
+            result = [(word, classifier.classify(self.name_features(word))) for word in words]
+            res = []
+            for pair in result:
+                word, is_name = pair
+                if is_name == "name":
+                    res.append(word)
+            final_word_counts = {}
+            for word in res:
+                if word not in final_word_counts:
+                    final_word_counts[word] = 1
+                else:
+                    final_word_counts[word] += 1
+            return max(final_word_counts.iteritems(), key=operator.itemgetter(1))[0]
+
+        def get_training_data(self, words):
+            results = []
+            for word in words:
+                word = word.decode('string_escape')
+                word = word.replace(",", "")
+                word = word.replace(".", "")
+                word = word.replace("!", "")
+                if word[0].isupper() and not d.check(word.lower()):
+                    results.append((word, "name"))
+                else:
+                    results.append((word, "not-name"))
+            return results
+
+        def get_word_counts(self, words):
 		caps = []
 		for word in words:
 			if word[0].isupper():
@@ -36,18 +91,37 @@ class Markov(object):
                                 word = word.replace(".", "")
                                 word = word.replace("!", "")
 				caps.append(word)
-                d = enchant.Dict("en_US")
                 for cap in caps:
                     temp = cap.lower()
                     if d.check(temp) or d.check(cap):
                         caps.remove(cap)
-                word_counts = {}
                 for cap in caps:
                     if cap in word_counts:
                         word_counts[cap] += 1
                     else:
                         word_counts[cap] = 1
-                return max(word_counts.iteritems(), key=operator.itemgetter(1))[0]
+
+	def get_main_char(self, words):
+                loc_word_counts = {}
+		caps = []
+		for word in words:
+			if word[0].isupper():
+                                word = word.decode('string_escape')
+                                word = word.replace(",", "")
+                                word = word.replace(".", "")
+                                word = word.replace("!", "")
+				caps.append(word)
+                for cap in caps:
+                    temp = cap.lower()
+                    if d.check(temp) or d.check(cap):
+                        caps.remove(cap)
+                for cap in caps:
+                    if cap in loc_word_counts:
+                        loc_word_counts[cap] += 1
+                    else:
+                        loc_word_counts[cap] = 1
+
+                return max(loc_word_counts.iteritems(), key=operator.itemgetter(1))[0]
 
 	def triples(self, words):
 		if len(words) < 3:
