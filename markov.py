@@ -19,12 +19,10 @@ class Markov(object):
 		words2 = self.file_to_words(open_file_2)
                 main_name1 = self.get_main_name(words1)
                 main_name2 = self.get_main_name(words2)
-                print main_name1
-                print main_name2
                 words2 = self.replace_words(main_name1, main_name2, words2)
 		self.database(words1, 0)
 		self.database(words2, 1)
-		self.word_size = len(words1) + len(words2)
+		self.word_size = len(words1)
 		self.words = words1 + words2
 		
         def replace_words(self, main_name1, main_name2, words):
@@ -128,6 +126,8 @@ class Markov(object):
 			return
 		for i in range(len(words) - 2):
 			yield (words[i], words[i+1], words[i+2])
+                yield words[-2], words[-1], words[0]
+                yield words[-1], words[0], words[1]
 			
 	def database(self, words, mashNum):
 		for w1, w2, w3 in self.triples(words):
@@ -151,17 +151,27 @@ class Markov(object):
 		else:
 			return (w2, random.choice(notTransitions), int(mashNum))
 
-	def generate_markov_text(self, size=25):
-		seed = random.randint(0, self.word_size-3)
-		seed_word, next_word = self.words[seed], self.words[seed+1]
-		w1, w2 = seed_word, next_word
-		gen_words = []
-		mashNum = 0
-		for i in xrange(size):
-			gen_words.append(w1)
-			w1, w2, mashnum = self.choose(w1,w2,mashNum)
-		gen_words.append(w2)
-		return ' '.join(gen_words)
+        def generate_markov_text(self, size=25):
+                maxtransitions = 0
+                g_w = []
+                for i in range(5):
+                        transitions = 0
+                        seed = random.randint(0, self.word_size-3)
+                        seed_word, next_word = self.words[seed], self.words[seed+1]
+                        w1, w2 = seed_word, next_word
+                        gen_words = []
+                        mashNum = 0
+                        for i in xrange(size):
+                                gen_words.append(w1)
+                                w1, w2, t = self.choose(w1,w2,mashNum)
+                                if (not t == mashNum):
+                                        transitions = transitions + 1
+                                        mashNum = t
+                        gen_words.append(w2)
+                        if transitions > maxtransitions:
+                                maxtransitions = transitions
+                                g_w = gen_words
+                return ' '.join(g_w)
 '''
 	def generate_like_text(self, text):
 		seed = random.randint(0, len(text) - 3)
