@@ -28,9 +28,15 @@ class Markov(object):
         def replace_words(self, main_name1, main_name2, words):
             for i in range(len(words)):
                 if words[i] == main_name2:
-                    print words[i]
                     words[i] = main_name1
-                    print words[i]
+
+                elif words[i] == main_name2 + ",":
+                    words[i] = main_name1 + ","
+
+                elif words[i] == main_name2 + ".":
+                    words[i] = main_name1 + "."
+                elif words[i] == main_name2 + "'s":
+                    words[i] = main_name1 + "'s"
             return words
 
 	def file_to_words(self, open_file):
